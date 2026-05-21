@@ -1,105 +1,72 @@
-# TP 11 — Localisation d'un smartphone et envoi des coordonnées vers un serveur distant
+# LAB 12 — GPS et Map (Google Maps Activity)
 
-## 📋 Objectifs pédagogiques
+## 📋 Objectifs
 
-- Récupérer la **latitude** et la **longitude** d'un smartphone via GPS
-- Comprendre le rôle des **permissions Android** liées à la localisation
-- Envoyer les données d'une application Android vers un **service PHP**
-- Enregistrer les coordonnées dans une base **MySQL**
-- Structurer un mini projet mobile connecté à un backend
+- Afficher une **Google Map** dans l'application
+- Demander la **permission de localisation** à l'exécution
+- Écouter les changements de position via **Network** et **GPS** providers
+- Ajouter un **marker** à chaque nouvelle position détectée
+- Si le GPS est désactivé : afficher une **boîte de dialogue** pour l'activer
+- **Zoomer** automatiquement sur la position courante
 
 ---
 
 ## 🏗️ Architecture du projet
 
 ```
-lab1-android/
-├── app/                              # Application Android
-│   └── src/main/
-│       ├── AndroidManifest.xml       # Permissions : INTERNET, FINE_LOCATION, COARSE_LOCATION
-│       ├── java/com/example/hellotoast/
-│       │   └── MainActivity.java     # Localisation GPS + envoi Volley POST
-│       └── res/
-│           ├── layout/
-│           │   └── activity_main.xml # Interface avec cards Material
-│           ├── xml/
-│           │   └── network_security_config.xml
-│           └── values/
-│               ├── strings.xml
-│               ├── colors.xml
-│               └── themes.xml
-├── php/                              # Backend PHP (à copier dans XAMPP)
-│   ├── connexion/Connexion.php       # Connexion PDO
-│   ├── ws/
-│   │   ├── savePosition.php          # POST : enregistrer une position
-│   │   └── getPositions.php          # GET  : lister les positions
-│   └── sql/
-│       └── setup.sql                 # Script de création de la BDD
-└── README.md
+app/src/main/
+├── AndroidManifest.xml               # Permissions + API Key Google Maps
+├── java/com/example/hellotoast/
+│   └── MapsActivity.java             # Activité Maps + LocationListener
+└── res/
+    ├── layout/
+    │   └── activity_maps.xml          # SupportMapFragment + info card
+    ├── drawable/
+    │   └── ic_launcher_foreground.xml
+    └── values/
+        ├── strings.xml
+        ├── colors.xml
+        └── themes.xml
 ```
 
 ---
 
-## 🚀 Mise en place
+## 🔑 Configuration de la clé API Google Maps
 
-### Partie 1 — Base de données MySQL
+### Étape 1 — Obtenir une clé API
 
-1. Démarrer **XAMPP** (Apache + MySQL)
-2. Ouvrir [http://localhost/phpmyadmin](http://localhost/phpmyadmin)
-3. Exécuter le script `php/sql/setup.sql` :
+1. Aller sur [Google Cloud Console](https://console.cloud.google.com/)
+2. Créer un projet ou en sélectionner un existant
+3. Activer l'API **Maps SDK for Android**
+4. Aller dans **APIs & Services → Credentials**
+5. Cliquer sur **Create Credentials → API Key**
+6. Copier la clé
 
-```sql
-CREATE DATABASE IF NOT EXISTS localisation_db;
-USE localisation_db;
+### Étape 2 — Insérer la clé dans le projet
 
-CREATE TABLE IF NOT EXISTS position (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    latitude DOUBLE NOT NULL,
-    longitude DOUBLE NOT NULL,
-    date_heure DATETIME NOT NULL,
-    device_id VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+Ouvrir `AndroidManifest.xml` et remplacer `YOUR_API_KEY_HERE` :
+
+```xml
+<meta-data
+    android:name="com.google.android.geo.API_KEY"
+    android:value="VOTRE_CLE_API_ICI" />
 ```
 
-### Partie 2 — Déploiement du Web Service PHP
-
-Copier le dossier `php/` dans `C:\xampp\htdocs\localisation` :
-
-```
-C:\xampp\htdocs\localisation\
-├── connexion/Connexion.php
-├── ws/
-│   ├── savePosition.php
-│   └── getPositions.php
-└── sql/setup.sql
-```
-
-**Tester avec Postman :**
-- **POST** `http://localhost/localisation/ws/savePosition.php`
-  - Body (x-www-form-urlencoded) : `latitude=33.97`, `longitude=-6.85`, `date=2025-05-21 14:30:00`, `deviceId=test123`
-- **GET** `http://localhost/localisation/ws/getPositions.php`
-
-### Partie 3 — Application Android
-
-1. Ouvrir le projet dans **Android Studio**
-2. **Sync Gradle** (Sync Now)
-3. Lancer sur émulateur ou appareil physique (API 26+)
-
-> **Note** : L'émulateur utilise `10.0.2.2` pour accéder au `localhost` de la machine hôte.
+> ⚠️ **Sans clé API valide, la carte affichera un écran gris/vide.**
 
 ---
 
-## 📱 Fonctionnement de l'application
+## 📱 Fonctionnalités
 
-| Étape | Action |
-|-------|--------|
-| 1 | Cliquer sur **📍 Obtenir la position** |
-| 2 | Accepter la permission de localisation |
-| 3 | L'app affiche : latitude, longitude, altitude, précision, date, ID appareil |
-| 4 | Cliquer sur **☁️ Envoyer au serveur** |
-| 5 | Les données sont envoyées en POST au serveur PHP |
-| 6 | Le serveur insère dans MySQL et retourne une confirmation JSON |
+| Fonctionnalité | Description |
+|----------------|-------------|
+| **Google Map** | Carte plein écran avec `SupportMapFragment` |
+| **Permission runtime** | Demande `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` |
+| **GPS Provider** | Écoute les positions du capteur GPS (marker 🔴 rouge) |
+| **Network Provider** | Écoute les positions réseau/WiFi (marker 🔵 bleu) |
+| **Dialog GPS** | Si GPS désactivé → popup proposant d'ouvrir les paramètres |
+| **Zoom auto** | `animateCamera` zoom niveau 16 sur chaque nouvelle position |
+| **Info panel** | Card flottante en bas : numéro position, lat/lng, provider |
 
 ---
 
@@ -107,10 +74,9 @@ C:\xampp\htdocs\localisation\
 
 | Composant | Technologie |
 |-----------|-------------|
-| Localisation | FusedLocationProviderClient (Google Play Services) |
-| HTTP Client | Volley 1.2.1 |
-| Backend | PHP 8 + PDO + MySQL |
-| UI | Material Components (Cards, Buttons) |
+| Carte | Google Maps SDK (`play-services-maps:18.2.0`) |
+| Localisation | `LocationManager` (GPS_PROVIDER + NETWORK_PROVIDER) |
+| UI | Material Components (MaterialCardView) |
 | Permissions | Runtime permissions (Android 6+) |
 
 ---
@@ -121,17 +87,32 @@ C:\xampp\htdocs\localisation\
 <uses-permission android:name="android.permission.INTERNET" />
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 ```
-
-La permission de localisation est demandée à l'exécution (runtime permission). Le fichier `network_security_config.xml` autorise le trafic HTTP clair vers `10.0.2.2`.
 
 ---
 
-## 🧪 Résultat attendu
+## 🚀 Comment exécuter
 
-L'application doit :
-- ✅ Détecter la position géographique du smartphone
-- ✅ Afficher latitude, longitude, altitude, précision
-- ✅ Envoyer les données (lat, lng, date, device ID) au serveur PHP
-- ✅ Insérer les coordonnées dans la table `position` de MySQL
-- ✅ Afficher la confirmation du serveur dans l'interface
+1. **Configurer la clé API** dans `AndroidManifest.xml` (voir ci-dessus)
+2. Ouvrir le projet dans **Android Studio**
+3. **Sync Gradle** → **Run**
+4. Sur l'émulateur : aller dans **Extended controls (⋯) → Location** pour simuler une position GPS
+5. L'application :
+   - Demande la permission de localisation
+   - Affiche la carte Google Maps
+   - Place un marker rouge (GPS) ou bleu (Network) à chaque position
+   - Zoome automatiquement sur la dernière position
+
+---
+
+## 🧪 Tester sur l'émulateur
+
+Pour simuler des positions GPS sur l'émulateur Android :
+
+1. Lancer l'app sur l'émulateur
+2. Ouvrir les **Extended Controls** (bouton `⋯` dans la barre de l'émulateur)
+3. Aller dans l'onglet **Location**
+4. Entrer des coordonnées (ex: `33.9716, -6.8498` pour Rabat)
+5. Cliquer sur **Set Location**
+6. Un marker apparaît sur la carte et l'info panel se met à jour

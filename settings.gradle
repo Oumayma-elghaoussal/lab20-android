@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LocalisationTP"
+rootProject.name = "GPSMap"
 include ':app'
