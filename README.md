@@ -137,3 +137,11 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
 }
 ```
+
+interface : 
+
+<img width="638" height="1080" alt="image" src="https://github.com/user-attachments/assets/b1e55120-e9dd-4473-812f-e2bec1536c60" />
+
+
+<img width="643" height="1022" alt="image" src="https://github.com/user-attachments/assets/5cef0681-a673-4b16-aea9-84dcb9bcbc6e" />
+
