@@ -6,16 +6,8 @@
     <color name="colorPrimaryDark">#1558B0</color>
     <color name="ic_launcher_background">#3F51B5</color>
     <color name="white">#FFFFFFFF</color>
-    <string name="app_name">Lab18 – ViewModel LiveData</string>
-    <string name="btn_add_background">+ 10 (Background Thread)</string>
-    <string name="btn_decrement">− Décrémenter</string>
-    <string name="btn_increment">+ Incrémenter</string>
-    <string name="btn_reset">Réinitialiser</string>
-    <string name="label_counter">Compteur</string>
-    <string name="section_classic">Variable classique (perdue à la rotation)</string>
-    <string name="section_info">Informations lifecycle</string>
-    <string name="section_viewmodel">ViewModel + LiveData</string>
-    <style name="Theme.Lab18ViewModel" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <string name="app_name">Lab 19 – Room MVVM Notes</string>
+    <style name="Theme.Lab19RoomMVVM" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
         <item name="colorOnPrimary">@color/white</item>

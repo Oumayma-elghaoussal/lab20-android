@@ -1,4 +1,4 @@
-com.example.hellotoast
+com.example.roommvvmdemo
 anim abc_fade_in
 anim abc_fade_out
 anim abc_grow_fade_in_from_bottom
@@ -3170,12 +3170,9 @@ id bounce
 id bounceBoth
 id bounceEnd
 id bounceStart
-id btnAddBackground
-id btnClassicIncrement
-id btnDecrement
-id btnIncrement
-id btnReset
 id buttonPanel
+id button_add_note
+id button_delete_all
 id cache_measures
 id callMeasure
 id cancel_button
@@ -3249,6 +3246,8 @@ id easeOut
 id east
 id edge
 id edit_query
+id edit_text_description
+id edit_text_title
 id elastic
 id embed
 id end
@@ -3301,6 +3300,7 @@ id indeterminate
 id info
 id invisible
 id inward
+id is_pooling_container_tag
 id italic
 id item_touch_helper_previous_elevation
 id jumpToEnd
@@ -3425,6 +3425,7 @@ id pathRelative
 id peekHeight
 id percent
 id pin
+id pooling_container_listener_holder_tag
 id position
 id postLayout
 id pressed
@@ -3433,6 +3434,7 @@ id progress_horizontal
 id radio
 id ratio
 id rectangles
+id recycler_view
 id report_drawn
 id reverseSawtooth
 id right
@@ -3526,6 +3528,8 @@ id textTop
 id text_input_end_icon
 id text_input_error_icon
 id text_input_start_icon
+id text_view_description
+id text_view_title
 id textinput_counter
 id textinput_error
 id textinput_helper_text
@@ -3548,9 +3552,6 @@ id transition_position
 id transition_scene_layoutid_cache
 id transition_transform
 id triangle
-id tvClassicCount
-id tvInfo
-id tvViewModelCount
 id unchecked
 id uniform
 id unlabeled
@@ -3756,6 +3757,7 @@ layout mtrl_picker_text_input_date
 layout mtrl_picker_text_input_date_range
 layout mtrl_search_bar
 layout mtrl_search_view
+layout note_item
 layout notification_action
 layout notification_action_tombstone
 layout notification_template_custom_big
@@ -3805,10 +3807,6 @@ string bottomsheet_action_expand
 string bottomsheet_action_expand_halfway
 string bottomsheet_drag_handle_clicked
 string bottomsheet_drag_handle_content_description
-string btn_add_background
-string btn_decrement
-string btn_increment
-string btn_reset
 string character_counter_content_description
 string character_counter_overflowed_content_description
 string character_counter_pattern
@@ -3821,7 +3819,6 @@ string fab_transformation_sheet_behavior
 string hide_bottom_view_on_scroll_behavior
 string icon_content_description
 string item_view_role_description
-string label_counter
 string m3_exceed_max_badge_text_suffix
 string m3_ref_typeface_brand_medium
 string m3_ref_typeface_brand_regular
@@ -3931,9 +3928,6 @@ string search_menu_title
 string searchbar_scrolling_view_behavior
 string searchview_clear_text_content_description
 string searchview_navigation_content_description
-string section_classic
-string section_info
-string section_viewmodel
 string side_sheet_accessibility_pane_title
 string side_sheet_behavior
 string status_bar_notification_info_overflow
@@ -4488,7 +4482,7 @@ style Theme_Design_Light
 style Theme_Design_Light_BottomSheetDialog
 style Theme_Design_Light_NoActionBar
 style Theme_Design_NoActionBar
-style Theme_Lab18ViewModel
+style Theme_Lab19RoomMVVM
 style Theme_Material3_Dark
 style Theme_Material3_Dark_BottomSheetDialog
 style Theme_Material3_Dark_Dialog

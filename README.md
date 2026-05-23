@@ -1,198 +1,139 @@
-# LAB 18 — ViewModel et LiveData en Android
+# LAB 19 — Architecture MVVM avec Room, Repository, LiveData et RecyclerView
 
-## Objectifs
-
-| # | Objectif |
-|---|----------|
-| 1 | Comprendre pourquoi une variable classique est **perdue à chaque rotation** |
-| 2 | Voir la limite de `onSaveInstanceState()` (ancienne méthode) |
-| 3 | Maîtriser **ViewModel** (survit à la destruction/re-création de l'Activity) |
-| 4 | Maîtriser **LiveData** (lifecycle-aware, met à jour l'UI quand l'Activity est active) |
-| 5 | Découvrir les concepts internes : `LifecycleOwner`, `Observer`, `ViewModelStore` |
-| 6 | Comprendre `MutableLiveData` vs `LiveData`, `setValue` vs `postValue` |
-| 7 | Tester des scénarios réels (rotation, thème, background thread) |
+Ce laboratoire met en pratique une architecture Android moderne et professionnelle recommandée par Google. L'application est un **Gestionnaire de Notes (Bloc-Notes)** complet permettant d'illustrer la persistance locale via Room Database et la gestion réactive de l'interface utilisateur.
 
 ---
 
-## Architecture
+## 🎯 Objectifs d'apprentissage
 
-```
-app/src/main/java/com/example/hellotoast/
-├── CounterViewModel.java   ← ViewModel + MutableLiveData
-└── MainActivity.java       ← UI + observe LiveData + variable classique
-
-app/src/main/res/
-├── layout/activity_main.xml
-└── values/ (strings, colors, themes)
-```
+1. **Créer un modèle métier (Entity)** annoté avec Room.
+2. **Définir un DAO (Data Access Object)** pour exposer des méthodes d'accès aux données avec support réactif (`LiveData`).
+3. **Initialiser une base de données SQLite locale** thread-safe via RoomDatabase (Pattern Singleton).
+4. **Implémenter le Repository Pattern** pour abstraire les sources de données et exécuter les opérations en arrière-plan (`ExecutorService`).
+5. **Maîtriser le ViewModel et LiveData** pour garantir la survie des données lors des changements de configuration (rotation, thèmes).
+6. **Mettre en œuvre un RecyclerView** performant avec liaison de données dynamique via un `Adapter`.
 
 ---
 
-## Le problème : pourquoi la variable classique est perdue ?
+## 🏗️ Architecture du projet
 
-Quand l'écran tourne, Android **détruit** et **re-crée** l'Activity :
+Le projet est structuré de façon professionnelle pour assurer la séparation des responsabilités :
 
 ```
-[Rotation]
-Activity.onDestroy() → Activity re-créée → onCreate()
-                                            ↓
-                                    toutes les variables
-                                    sont réinitialisées !
-```
-
-```java
-// PROBLÈME : classicCount revient à 0 après rotation
-private int classicCount = 0;
+com.example.roommvvmdemo
+│
+├── data
+│   ├── local
+│   │   ├── Note.java          ← Entity (Table SQLite)
+│   │   ├── NoteDao.java       ← Interface DAO (Requêtes SQL)
+│   │   └── NoteDatabase.java  ← Singleton de la base de données Room
+│   └── NoteRepository.java    ← Repository (Abstraction de la couche d'accès)
+│
+├── ui
+│   ├── MainActivity.java      ← View (Interface utilisateur)
+│   └── NoteAdapter.java       ← Adapter du RecyclerView (Liaison UI)
+│
+└── viewmodel
+    └── NoteViewModel.java     ← ViewModel (Logique métier UI & cycle de vie)
 ```
 
 ---
 
-## La solution : ViewModel
+## 📝 Description des composants
 
-Le **ViewModel** est stocké dans un `ViewModelStore` qui survit à la re-création :
+### 1. L'Entity : `Note.java`
+Déclare la structure de la table SQLite `notes_table`.
+- `@Entity` : Spécifie que cette classe correspond à une table de base de données.
+- `@PrimaryKey(autoGenerate = true)` : Room génère l'identifiant auto-incrémenté.
 
-```
-Activity #1          Activity #2 (après rotation)
-    ↓                      ↓
-ViewModelStore ←──────── ViewModelStore (MÊME instance)
-    ↓                      ↓
-CounterViewModel ←──── CounterViewModel (MÊME instance, count intact)
-```
+### 2. Le DAO : `NoteDao.java`
+Contient les signatures des méthodes de requêtes.
+- `@Insert`, `@Delete` : Gérés automatiquement par Room.
+- `@Query("...")` : Requêtes SQLite personnalisées.
+- Retourner `LiveData<List<Note>>` permet d'observer en temps réel les changements de la base.
 
-```java
-// Le ViewModel est obtenu via ViewModelProvider
-viewModel = new ViewModelProvider(this).get(CounterViewModel.class);
-// 1er appel → crée le ViewModel
-// Après rotation → retourne la MÊME instance
-```
+### 3. La Base Room : `NoteDatabase.java`
+- Hérite de `RoomDatabase`.
+- Contient une instance unique (Singleton) instanciée via `Room.databaseBuilder` avec la sécurité multi-thread (`volatile`, `synchronized`).
+- `.fallbackToDestructiveMigration()` évite les plantages lors des changements de schémas en phase de développement.
 
----
+### 4. Le Repository : `NoteRepository.java`
+- Intermédiaire direct entre la base locale et le ViewModel.
+- Gère le thread secondaire à l'aide d'un `ExecutorService` pour éviter de bloquer l'interface utilisateur lors des écritures (`insert`, `delete`, `deleteAllNotes`).
 
-## LiveData : mise à jour automatique de l'UI
+### 5. Le ViewModel : `NoteViewModel.java`
+- Étend `AndroidViewModel` pour disposer du contexte de l'application de façon sécurisée.
+- Permet à l'activité de s'abonner au `LiveData` sans se soucier du cycle de vie ou de la re-création de la base.
 
-**LiveData** est **lifecycle-aware** : l'Observer n'est appelé que si l'Activity est active.
-
-```java
-// Dans le ViewModel (privé = écriture)
-private final MutableLiveData<Integer> count = new MutableLiveData<>(0);
-
-// Exposé en lecture seule
-public LiveData<Integer> getCount() { return count; }
-
-// Dans l'Activity (observe)
-viewModel.getCount().observe(this, count -> {
-    tvCounter.setText(String.valueOf(count));
-});
-// → PAS besoin de désenregistrer manuellement !
-```
+### 6. Le RecyclerView et Adapter : `NoteAdapter.java`
+- Gère le recyclage des cellules de notes.
+- Fournit une interface `OnItemLongClickListener` pour supprimer dynamiquement une note lors d'un appui long.
 
 ---
 
-## MutableLiveData vs LiveData
+## 🔄 Flux complet de fonctionnement
 
-| | `MutableLiveData` | `LiveData` |
-|---|---|---|
-| **Accès** | Lecture + Écriture | Lecture seule |
-| **Utilisé par** | Le ViewModel (interne) | L'Activity (via getter) |
-| **Méthodes** | `setValue()`, `postValue()` | `observe()`, `getValue()` |
-
-**Pourquoi ?** → **Encapsulation** : l'Activity ne peut pas modifier la valeur directement.
-
----
-
-## setValue() vs postValue()
-
-| | `setValue()` | `postValue()` |
-|---|---|---|
-| **Thread** | Main thread UNIQUEMENT | N'importe quel thread |
-| **Timing** | Synchrone (immédiat) | Asynchrone (posté au main) |
-| **Usage** | Clic bouton, UI event | Réseau, BDD, worker thread |
-
-```java
-// Main thread
-count.setValue(42);
-
-// Background thread
-new Thread(() -> {
-    // travail long...
-    count.postValue(42);  // thread-safe
-}).start();
+```mermaid
+graph TD
+    A[Utilisateur clique sur 'Ajouter'] --> B[MainActivity crée Note]
+    B --> C[MainActivity appelle NoteViewModel.insert]
+    C --> D[NoteViewModel délègue au NoteRepository]
+    D --> E[NoteRepository lance un Thread secondaire]
+    E --> F[NoteDao insère dans NoteDatabase / SQLite]
+    F --> G[NoteDatabase change]
+    G --> H[Room met à jour automatiquement le LiveData]
+    H --> I[MainActivity.Observer reçoit la nouvelle liste]
+    I --> J[NoteAdapter.setNotes met à jour le RecyclerView]
 ```
 
 ---
 
-## Concepts internes
+## 🧪 Tests à réaliser
 
-### LifecycleOwner
-L'Activity implémente `LifecycleOwner`. Quand on écrit `observe(this, ...)`, le `this` permet à LiveData de savoir si l'Activity est active.
+Pour valider le fonctionnement optimal de l'application, effectuez les scénarios de test suivants :
 
-### ViewModelStore
-Conteneur interne qui garde les ViewModel vivants entre les re-créations d'Activity. Détruit seulement quand `isFinishing() == true`.
+### Test 1 : Insertion simple
+1. Saisissez un titre et une description.
+2. Cliquez sur **AJOUTER LA NOTE**.
+3. *Résultat attendu :* La note s'affiche instantanément au sommet du `RecyclerView` avec un design sous forme de carte.
 
-### Observer
-Lambda passée à `observe()`. Appelée **uniquement** quand :
-- L'Activity est en état `STARTED` ou `RESUMED`
-- La valeur du LiveData a changé
+### Test 2 : Suppression individuelle (Long Click)
+1. Effectuez un appui long (long click) sur n'importe quelle note affichée dans la liste.
+2. *Résultat attendu :* Un message Toast confirme la suppression et la note disparaît immédiatement avec une animation fluide.
 
-### onCleared()
-Méthode appelée quand le ViewModel est **définitivement détruit** (Activity finish). Idéal pour libérer des ressources.
+### Test 3 : Persistance locale des données
+1. Ajoutez plusieurs notes dans l'application.
+2. Fermez complètement l'application (tuez le processus ou balayez-la depuis les applications récentes).
+3. Relancez l'application.
+4. *Résultat attendu :* Toutes vos notes précédentes sont toujours présentes et rechargées automatiquement depuis SQLite.
+
+### Test 4 : Changement de configuration (Rotation d'écran)
+1. Saisissez du texte ou visualisez votre liste existante.
+2. Pivotez l'écran de l'émulateur (Ctrl + F11).
+3. *Résultat attendu :* L'application se recharge parfaitement, aucun doublon n'est créé et la liste reste cohérente sans perte de données grâce au ViewModel.
+
+### Test 5 : Suppression globale
+1. Cliquez sur le bouton **SUPPRIMER TOUT**.
+2. *Résultat attendu :* Toute la base de données Room est vidée instantanément et le RecyclerView affiche une interface vide de manière réactive.
 
 ---
 
-## Dépendances
+## ⚙️ Configuration Gradle (Dépendances)
+
+Les composants de base Room, Lifecycle et RecyclerView ont été intégrés à votre `build.gradle` :
 
 ```groovy
 dependencies {
+    // Lifecycle (ViewModel & LiveData)
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.7.0'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.7.0'
+    
+    // Room components
+    implementation 'androidx.room:room-runtime:2.6.1'
+    annotationProcessor 'androidx.room:room-compiler:2.6.1'
+
+    // UI & List Components
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'com.google.android.material:material:1.11.0'
 }
 ```
-
----
-
-## Tests à faire
-
-### Test 1 : Rotation
-1. Incrémentez le compteur **classique** 5 fois → affiche `5`
-2. Incrémentez le compteur **ViewModel** 15 fois → affiche `15`
-3. **Tournez l'écran** (Ctrl+F11 sur émulateur)
-4. **Résultat :** classique = `0` ❌ | ViewModel = `15` ✅
-
-### Test 2 : Changement de thème
-1. Incrémentez → rotation → changement sombre/clair
-2. Le compteur ViewModel reste intact
-
-### Test 3 : Background thread (postValue)
-1. Cliquez "**+ 10 (Background Thread)**"
-2. Après 500ms le compteur augmente de 10
-3. Vérifiez dans Logcat : `[thread=Thread-X]`
-
-### Test 4 : Sans LiveData
-1. Commentez la ligne `viewModel.getCount().observe(...)` dans MainActivity
-2. Cliquez Incrémenter → l'UI ne se met **plus** à jour automatiquement
-3. → Prouve que c'est LiveData qui pousse les updates
-
-### Test 5 : Logcat
-Filtrez par `CounterViewModel` ou `MainActivity` :
-
-```
-I/CounterViewModel: ═══ CounterViewModel CRÉÉ (instance #1) ═══
-I/MainActivity: ═══ onCreate() — Activity créée 1 fois ═══
-D/CounterViewModel: increment → 1
-D/MainActivity: LiveData observe → UI mise à jour : 1
-[ROTATION]
-I/MainActivity: onDestroy() — isFinishing=false
-I/MainActivity: ═══ onCreate() — Activity créée 2 fois ═══
-D/MainActivity: LiveData observe → UI mise à jour : 1   ← INTACT !
-```
-> ⚠️ Notez que `CounterViewModel CRÉÉ` n'apparaît qu'**une seule fois** !
-
----
-
-## Comparatif : anciennes méthodes vs ViewModel
-
-| Méthode | Survit rotation | Données complexes | Lifecycle-aware |
-|---|---|---|---|
-| Variable classique | ❌ | ✅ | ❌ |
-| `onSaveInstanceState()` | ✅ | ❌ (Bundle limité) | ❌ |
-| **ViewModel + LiveData** | **✅** | **✅** | **✅** |

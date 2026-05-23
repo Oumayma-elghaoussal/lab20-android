@@ -1,15 +1,3 @@
 <resources>
-    <string name="app_name">Lab18 – ViewModel LiveData</string>
-
-    <!-- Compteur -->
-    <string name="label_counter">Compteur</string>
-    <string name="btn_increment">+ Incrémenter</string>
-    <string name="btn_decrement">− Décrémenter</string>
-    <string name="btn_reset">Réinitialiser</string>
-    <string name="btn_add_background">+ 10 (Background Thread)</string>
-
-    <!-- Sections -->
-    <string name="section_viewmodel">ViewModel + LiveData</string>
-    <string name="section_classic">Variable classique (perdue à la rotation)</string>
-    <string name="section_info">Informations lifecycle</string>
+    <string name="app_name">Lab 19 – Room MVVM Notes</string>
 </resources>

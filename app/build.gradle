@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.hellotoast'
+    namespace 'com.example.roommvvmdemo'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.hellotoast"
+        applicationId "com.example.roommvvmdemo"
         minSdk 26
         targetSdk 34
         versionCode 1
@@ -31,7 +31,15 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    // Jetpack Lifecycle — ViewModel + LiveData
+    
+    // Lifecycle components
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.7.0'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.7.0'
+    
+    // Room components
+    implementation 'androidx.room:room-runtime:2.6.1'
+    annotationProcessor 'androidx.room:room-compiler:2.6.1'
+
+    // RecyclerView
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
 }

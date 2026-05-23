@@ -1,110 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#F5F5F5">
 
-    <LinearLayout
-        android:orientation="vertical"
-        android:padding="16dp"
+    <!-- Header / Control Panel Card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp">
 
-        <!-- SECTION 1 — Variable classique (perdue à la rotation) -->
-        <com.google.android.material.card.MaterialCardView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
-            <LinearLayout android:orientation="vertical" android:padding="16dp"
-                android:gravity="center"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <TextView android:text="@string/section_classic" android:textSize="16sp"
-                    android:textStyle="bold" android:textColor="#D32F2F"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"/>
-                <TextView android:id="@+id/tvClassicCount" android:text="0"
-                    android:textSize="40sp" android:textStyle="bold" android:textColor="#D32F2F"
-                    android:fontFamily="monospace"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"/>
-                <TextView android:text="⚠️ Perdu après rotation"
-                    android:textSize="12sp" android:textColor="#888"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"/>
-                <Button android:id="@+id/btnClassicIncrement"
-                    android:text="+ Incrémenter (classique)"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <!-- SECTION 2 — ViewModel + LiveData (survit à la rotation) -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
-            <LinearLayout android:orientation="vertical" android:padding="20dp"
-                android:gravity="center"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <TextView android:text="@string/section_viewmodel" android:textSize="18sp"
-                    android:textStyle="bold" android:textColor="@color/colorPrimary"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"/>
-                <TextView android:id="@+id/tvViewModelCount" android:text="0"
-                    android:textSize="64sp" android:textStyle="bold" android:textColor="@color/colorPrimary"
-                    android:fontFamily="monospace"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"/>
-                <TextView android:text="✅ Survit à la rotation"
-                    android:textSize="12sp" android:textColor="#4CAF50"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"/>
-                <LinearLayout android:orientation="horizontal"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp">
-                    <Button android:id="@+id/btnDecrement" android:text="@string/btn_decrement"
-                        android:layout_width="0dp" android:layout_weight="1"
-                        android:layout_height="wrap_content" android:layout_marginEnd="4dp"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-                    <Button android:id="@+id/btnIncrement" android:text="@string/btn_increment"
-                        android:layout_width="0dp" android:layout_weight="1"
-                        android:layout_height="wrap_content" android:layout_marginStart="4dp"/>
-                </LinearLayout>
-                <Button android:id="@+id/btnReset" android:text="@string/btn_reset"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"/>
-                <Button android:id="@+id/btnAddBackground"
-                    android:text="@string/btn_add_background"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bloc-Notes (Room MVVM)"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorPrimary"
+                android:layout_marginBottom="12dp" />
 
-        <!-- SECTION 3 — Infos lifecycle -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
-            <LinearLayout android:orientation="vertical" android:padding="16dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <TextView android:text="@string/section_info" android:textSize="16sp"
-                    android:textStyle="bold" android:textColor="@color/colorPrimary"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"/>
-                <TextView android:id="@+id/tvInfo" android:text=""
-                    android:textSize="12sp" android:textColor="#444"
-                    android:fontFamily="monospace" android:lineSpacingExtra="3dp"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Titre de la note"
+                android:layout_marginBottom="8dp">
 
-    </LinearLayout>
-</ScrollView>
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Description de la note"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edit_text_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:minLines="2" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/button_add_note"
+                    android:layout_width="0dp"
+                    android:layout_weight="1.2"
+                    android:layout_height="wrap_content"
+                    android:text="Ajouter la Note"
+                    android:layout_marginEnd="6dp"/>
+
+                <Button
+                    android:id="@+id/button_delete_all"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/colorAccent"
+                    app:strokeColor="@color/colorAccent"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="Supprimer Tout"
+                    android:layout_marginStart="6dp"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Subtitle / Notes list section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mes Notes (Clic long pour supprimer)"
+        android:textSize="14sp"
+        android:textColor="#757575"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="8dp"
+        android:textStyle="bold" />
+
+    <!-- RecyclerView for notes -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp" />
+
+</LinearLayout>
