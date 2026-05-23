@@ -1,174 +1,141 @@
 package com.example.hellotoast;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.Log;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import androidx.lifecycle.ViewModelProvider;
 
 /**
- * LAB 17 — BroadcastReceiver Demo.
+ * LAB 18 — MainActivity : ViewModel + LiveData vs variable classique.
  *
- * 1) Receiver DYNAMIQUE : détecte ACTION_AIRPLANE_MODE_CHANGED
- * 2) Receiver STATIQUE  : BootReceiver (BOOT_COMPLETED, déclaré dans Manifest)
- * 3) Broadcast CUSTOM    : envoie et reçoit un broadcast interne
- * 4) Journal des événements : affiche tous les broadcasts reçus
+ * Démontre :
+ *   1) Variable classique → remise à 0 après rotation (Activity re-créée)
+ *   2) ViewModel + LiveData → compteur intact après rotation
+ *   3) postValue() depuis un background thread
+ *   4) Informations lifecycle (nombre de créations, instance ViewModel)
+ *
+ * Concepts internes :
+ *   - LifecycleOwner : l'Activity elle-même (this)
+ *   - Observer : lambda dans observe() — appelé seulement quand l'Activity est STARTED/RESUMED
+ *   - ViewModelStore : conteneur interne qui garde le ViewModel vivant entre les re-créations
+ *   - ViewModelProvider : récupère ou crée le ViewModel depuis le ViewModelStore
  */
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-    // Action custom pour le broadcast interne
-    public static final String ACTION_CUSTOM =
-            "com.example.hellotoast.ACTION_CUSTOM_BROADCAST";
+    // Compteur de créations d'Activity (pour prouver la re-création à la rotation)
+    private static int activityCreateCount = 0;
 
-    private TextView tvAirplaneStatus, tvCustomResult, tvLog;
-    private EditText etMessage;
+    // ── Variable classique (PERDUE à la rotation) ──
+    private int classicCount = 0;
 
-    // StringBuilder pour le journal
-    private final StringBuilder logBuilder = new StringBuilder();
+    // ── ViewModel (SURVIT à la rotation) ──
+    private CounterViewModel viewModel;
 
-    // ── Receiver DYNAMIQUE : Mode Avion ──────────────
-    private final BroadcastReceiver airplaneReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            // Lire l'état du mode avion
-            boolean isAirplaneOn = Settings.Global.getInt(
-                    context.getContentResolver(),
-                    Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-
-            String status = isAirplaneOn
-                    ? "✈️ Mode Avion : ACTIVÉ"
-                    : "📶 Mode Avion : DÉSACTIVÉ";
-
-            tvAirplaneStatus.setText(status);
-            appendLog("AIRPLANE_MODE → " + (isAirplaneOn ? "ON" : "OFF"));
-
-            Log.i(TAG, "airplaneReceiver.onReceive() → " + status);
-            Toast.makeText(context, status, Toast.LENGTH_SHORT).show();
-        }
-    };
-
-    // ── Receiver DYNAMIQUE : Broadcast custom ────────
-    private final BroadcastReceiver customReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String message = intent.getStringExtra("message");
-            if (message == null) message = "(vide)";
-
-            tvCustomResult.setText("📨 Reçu : " + message);
-            appendLog("CUSTOM_BROADCAST → \"" + message + "\"");
-
-            Log.i(TAG, "customReceiver.onReceive() → " + message);
-            Toast.makeText(context, "Broadcast reçu : " + message, Toast.LENGTH_SHORT).show();
-        }
-    };
-
-    // ════════════════════════════════════════════════
-    //  Cycle de vie
-    // ════════════════════════════════════════════════
+    // Vues
+    private TextView tvClassicCount, tvViewModelCount, tvInfo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Binding des vues
-        tvAirplaneStatus = findViewById(R.id.tvAirplaneStatus);
-        tvCustomResult   = findViewById(R.id.tvCustomResult);
-        tvLog            = findViewById(R.id.tvLog);
-        etMessage        = findViewById(R.id.etMessage);
-        Button btnSend   = findViewById(R.id.btnSendBroadcast);
-        Button btnClear  = findViewById(R.id.btnClearLog);
+        activityCreateCount++;
+        Log.i(TAG, "═══ onCreate() — Activity créée " + activityCreateCount + " fois ═══");
 
-        // ── Enregistrement DYNAMIQUE : Mode Avion ──
-        IntentFilter airplaneFilter = new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(airplaneReceiver, airplaneFilter, Context.RECEIVER_EXPORTED);
-        } else {
-            registerReceiver(airplaneReceiver, airplaneFilter);
-        }
-        appendLog("Receiver Mode Avion enregistré (dynamique)");
-        Log.i(TAG, "airplaneReceiver enregistré");
+        // Binding
+        tvClassicCount   = findViewById(R.id.tvClassicCount);
+        tvViewModelCount = findViewById(R.id.tvViewModelCount);
+        tvInfo           = findViewById(R.id.tvInfo);
 
-        // ── Enregistrement DYNAMIQUE : Broadcast custom ──
-        IntentFilter customFilter = new IntentFilter(ACTION_CUSTOM);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(customReceiver, customFilter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(customReceiver, customFilter);
-        }
-        appendLog("Receiver Custom enregistré (dynamique)");
-        Log.i(TAG, "customReceiver enregistré");
+        Button btnClassicInc  = findViewById(R.id.btnClassicIncrement);
+        Button btnIncrement   = findViewById(R.id.btnIncrement);
+        Button btnDecrement   = findViewById(R.id.btnDecrement);
+        Button btnReset       = findViewById(R.id.btnReset);
+        Button btnAddBg       = findViewById(R.id.btnAddBackground);
 
-        // ── Lire l'état actuel du mode avion ──
-        boolean airplaneNow = Settings.Global.getInt(
-                getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-        tvAirplaneStatus.setText(airplaneNow
-                ? "✈️ Mode Avion : ACTIVÉ"
-                : "📶 Mode Avion : DÉSACTIVÉ");
+        // ══════════════════════════════════════════
+        //  Obtenir le ViewModel
+        // ══════════════════════════════════════════
+        // ViewModelProvider cherche dans le ViewModelStore :
+        //   - 1er appel → crée une nouvelle instance
+        //   - Après rotation → retourne la MÊME instance
+        viewModel = new ViewModelProvider(this).get(CounterViewModel.class);
 
-        // ── Bouton : Envoyer broadcast custom ──
-        btnSend.setOnClickListener(v -> {
-            String msg = etMessage.getText().toString().trim();
-            if (msg.isEmpty()) {
-                Toast.makeText(this, "Entrez un message !", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            Intent intent = new Intent(ACTION_CUSTOM);
-            intent.putExtra("message", msg);
-
-            // setPackage() pour cibler uniquement notre app (bonne pratique sécurité)
-            intent.setPackage(getPackageName());
-
-            sendBroadcast(intent);
-
-            appendLog("Broadcast envoyé : \"" + msg + "\"");
-            Log.i(TAG, "sendBroadcast() → " + msg);
-            etMessage.setText("");
+        // ══════════════════════════════════════════
+        //  Observer le LiveData
+        // ══════════════════════════════════════════
+        // observe(LifecycleOwner, Observer)
+        //   - LifecycleOwner = this (l'Activity)
+        //   - L'Observer est appelé SEULEMENT quand l'Activity est active (STARTED/RESUMED)
+        //   - Pas besoin de désenregistrer manuellement → lifecycle-aware
+        viewModel.getCount().observe(this, count -> {
+            tvViewModelCount.setText(String.valueOf(count));
+            Log.d(TAG, "LiveData observe → UI mise à jour : " + count);
         });
 
-        // ── Bouton : Effacer le journal ──
-        btnClear.setOnClickListener(v -> {
-            logBuilder.setLength(0);
-            tvLog.setText("");
+        // ══════════════════════════════════════════
+        //  Section 1 : Variable classique
+        // ══════════════════════════════════════════
+        tvClassicCount.setText(String.valueOf(classicCount)); // toujours 0 après rotation
+
+        btnClassicInc.setOnClickListener(v -> {
+            classicCount++;
+            tvClassicCount.setText(String.valueOf(classicCount));
+            Log.d(TAG, "classicCount = " + classicCount);
         });
 
-        appendLog("Application démarrée");
+        // ══════════════════════════════════════════
+        //  Section 2 : ViewModel + LiveData
+        // ══════════════════════════════════════════
+        btnIncrement.setOnClickListener(v -> viewModel.increment());
+
+        btnDecrement.setOnClickListener(v -> viewModel.decrement());
+
+        btnReset.setOnClickListener(v -> {
+            viewModel.reset();
+            Toast.makeText(this, "Compteur réinitialisé", Toast.LENGTH_SHORT).show();
+        });
+
+        // postValue() depuis un background thread
+        btnAddBg.setOnClickListener(v -> {
+            Toast.makeText(this, "Ajout de 10 en background…", Toast.LENGTH_SHORT).show();
+            viewModel.addFromBackground();
+        });
+
+        // ══════════════════════════════════════════
+        //  Section 3 : Informations lifecycle
+        // ══════════════════════════════════════════
+        updateInfo();
+    }
+
+    private void updateInfo() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Activity.onCreate() appelé : ").append(activityCreateCount).append(" fois\n");
+        sb.append("ViewModel instance #").append(viewModel.getInstanceId()).append("\n");
+        sb.append("→ Si le numéro d'instance ne change pas\n");
+        sb.append("  après rotation, le ViewModel a survécu !\n\n");
+        sb.append("classicCount = ").append(classicCount).append(" (toujours 0 après rotation)\n");
+        sb.append("viewModel count = ").append(viewModel.getCount().getValue()).append(" (intact !)\n\n");
+        sb.append("─── Concepts ───\n");
+        sb.append("• LifecycleOwner = this (Activity)\n");
+        sb.append("• ViewModelStore garde le VM vivant\n");
+        sb.append("• Observer reçoit les updates auto\n");
+        sb.append("• setValue = main thread\n");
+        sb.append("• postValue = any thread\n");
+        tvInfo.setText(sb.toString());
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        // Désenregistrer les receivers dynamiques (éviter les fuites mémoire)
-        unregisterReceiver(airplaneReceiver);
-        unregisterReceiver(customReceiver);
-
-        Log.i(TAG, "Receivers désenregistrés dans onDestroy()");
-    }
-
-    // ════════════════════════════════════════════════
-    //  Journal des événements
-    // ════════════════════════════════════════════════
-
-    private void appendLog(String event) {
-        String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-        logBuilder.insert(0, "[" + time + "] " + event + "\n");
-        tvLog.setText(logBuilder.toString().trim());
+        Log.i(TAG, "onDestroy() — isFinishing=" + isFinishing());
+        // Si isFinishing() == true → l'utilisateur a quitté (back), ViewModel sera détruit
+        // Si isFinishing() == false → rotation, ViewModel SURVIT
     }
 }

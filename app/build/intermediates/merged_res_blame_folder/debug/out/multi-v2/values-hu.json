@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.hellotoast.app-mergeDebugResources-29:/values-hu/values-hu.xml",
+            "outputFile": "com.example.hellotoast.app-mergeDebugResources-30:/values-hu/values-hu.xml",
             "map": [
                 {
                     "source": "C:\\Users\\PC\\.gradle\\caches\\transforms-3\\3c3e8d87979f80077854f6234c4ddaef\\transformed\\appcompat-1.6.1\\res\\values-hu\\values-hu.xml",

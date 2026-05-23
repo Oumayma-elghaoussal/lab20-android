@@ -1,221 +1,198 @@
-# LAB 16 — Maîtriser les Services dans une Application Android
+# LAB 18 — ViewModel et LiveData en Android
 
-## Objectifs du lab
+## Objectifs
 
 | # | Objectif |
 |---|----------|
-| 1 | Créer un **Foreground Service** (obligatoire depuis Android 8.0) |
-| 2 | Afficher une **notification persistante** avec le temps en direct |
-| 3 | Utiliser un **Bound Service** pour communiquer avec l'Activity |
-| 4 | **Démarrage / arrêt** depuis l'interface |
-| 5 | Comprendre le **cycle de vie** des Services, `onStartCommand`, `onBind`, `START_STICKY` |
+| 1 | Comprendre pourquoi une variable classique est **perdue à chaque rotation** |
+| 2 | Voir la limite de `onSaveInstanceState()` (ancienne méthode) |
+| 3 | Maîtriser **ViewModel** (survit à la destruction/re-création de l'Activity) |
+| 4 | Maîtriser **LiveData** (lifecycle-aware, met à jour l'UI quand l'Activity est active) |
+| 5 | Découvrir les concepts internes : `LifecycleOwner`, `Observer`, `ViewModelStore` |
+| 6 | Comprendre `MutableLiveData` vs `LiveData`, `setValue` vs `postValue` |
+| 7 | Tester des scénarios réels (rotation, thème, background thread) |
 
 ---
 
-## Architecture du projet
+## Architecture
 
 ```
 app/src/main/java/com/example/hellotoast/
-├── ChronoService.java     ← Foreground + Bound Service (chronomètre)
-└── MainActivity.java      ← Interface de contrôle
+├── CounterViewModel.java   ← ViewModel + MutableLiveData
+└── MainActivity.java       ← UI + observe LiveData + variable classique
 
 app/src/main/res/
-├── layout/activity_main.xml   ← UI (timer + boutons start/stop)
-└── values/
-    ├── strings.xml
-    ├── colors.xml
-    └── themes.xml
+├── layout/activity_main.xml
+└── values/ (strings, colors, themes)
 ```
 
 ---
 
-## Concepts clés expliqués
+## Le problème : pourquoi la variable classique est perdue ?
 
-### 1. Foreground Service (obligatoire depuis Android 8.0)
+Quand l'écran tourne, Android **détruit** et **re-crée** l'Activity :
 
-Depuis **Android 8.0 (API 26)**, un service qui tourne en arrière-plan **doit** afficher une notification. Sinon, le système le tue après quelques secondes.
+```
+[Rotation]
+Activity.onDestroy() → Activity re-créée → onCreate()
+                                            ↓
+                                    toutes les variables
+                                    sont réinitialisées !
+```
 
 ```java
-// Lancer un Foreground Service
-ContextCompat.startForegroundService(this, intent);
-
-// Dans le Service (dans les 5 premières secondes !)
-startForeground(NOTIFICATION_ID, notification);
+// PROBLÈME : classicCount revient à 0 après rotation
+private int classicCount = 0;
 ```
 
-### 2. `onStartCommand()` et `START_STICKY`
+---
+
+## La solution : ViewModel
+
+Le **ViewModel** est stocké dans un `ViewModelStore` qui survit à la re-création :
+
+```
+Activity #1          Activity #2 (après rotation)
+    ↓                      ↓
+ViewModelStore ←──────── ViewModelStore (MÊME instance)
+    ↓                      ↓
+CounterViewModel ←──── CounterViewModel (MÊME instance, count intact)
+```
 
 ```java
-@Override
-public int onStartCommand(Intent intent, int flags, int startId) {
-    startForeground(NOTIFICATION_ID, buildNotification("00:00:00"));
-    startTimer();
-    return START_STICKY;  // Le système relance le service s'il est tué
-}
+// Le ViewModel est obtenu via ViewModelProvider
+viewModel = new ViewModelProvider(this).get(CounterViewModel.class);
+// 1er appel → crée le ViewModel
+// Après rotation → retourne la MÊME instance
 ```
 
-| Valeur de retour | Comportement |
-|---|---|
-| `START_STICKY` | Relancé automatiquement (intent = null) |
-| `START_NOT_STICKY` | Pas relancé |
-| `START_REDELIVER_INTENT` | Relancé avec le dernier Intent |
+---
 
-### 3. Bound Service (communication Activity ↔ Service)
+## LiveData : mise à jour automatique de l'UI
 
-Le pattern **Binder** permet à l'Activity d'appeler directement les méthodes du Service :
+**LiveData** est **lifecycle-aware** : l'Observer n'est appelé que si l'Activity est active.
 
 ```java
-// Dans le Service
-public class ChronoBinder extends Binder {
-    public ChronoService getService() {
-        return ChronoService.this;
-    }
-}
+// Dans le ViewModel (privé = écriture)
+private final MutableLiveData<Integer> count = new MutableLiveData<>(0);
 
-@Override
-public IBinder onBind(Intent intent) {
-    return binder;
-}
+// Exposé en lecture seule
+public LiveData<Integer> getCount() { return count; }
 
-// Dans l'Activity
-bindService(intent, connection, Context.BIND_AUTO_CREATE);
-// → connection.onServiceConnected() reçoit le Binder
+// Dans l'Activity (observe)
+viewModel.getCount().observe(this, count -> {
+    tvCounter.setText(String.valueOf(count));
+});
+// → PAS besoin de désenregistrer manuellement !
 ```
 
-### 4. Notification Channel (obligatoire depuis Android 8.0)
+---
+
+## MutableLiveData vs LiveData
+
+| | `MutableLiveData` | `LiveData` |
+|---|---|---|
+| **Accès** | Lecture + Écriture | Lecture seule |
+| **Utilisé par** | Le ViewModel (interne) | L'Activity (via getter) |
+| **Méthodes** | `setValue()`, `postValue()` | `observe()`, `getValue()` |
+
+**Pourquoi ?** → **Encapsulation** : l'Activity ne peut pas modifier la valeur directement.
+
+---
+
+## setValue() vs postValue()
+
+| | `setValue()` | `postValue()` |
+|---|---|---|
+| **Thread** | Main thread UNIQUEMENT | N'importe quel thread |
+| **Timing** | Synchrone (immédiat) | Asynchrone (posté au main) |
+| **Usage** | Clic bouton, UI event | Réseau, BDD, worker thread |
 
 ```java
-NotificationChannel channel = new NotificationChannel(
-    CHANNEL_ID,
-    "Chronomètre",
-    NotificationManager.IMPORTANCE_LOW  // pas de son
-);
-notificationManager.createNotificationChannel(channel);
-```
+// Main thread
+count.setValue(42);
 
-### 5. Permission POST_NOTIFICATIONS (Android 13+)
-
-Depuis **Android 13 (API 33)**, il faut demander la permission à l'exécution :
-
-```xml
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+// Background thread
+new Thread(() -> {
+    // travail long...
+    count.postValue(42);  // thread-safe
+}).start();
 ```
 
 ---
 
-## Cycle de vie du Service
+## Concepts internes
 
-```
-startForegroundService()
-    ↓
-onCreate()  ← créé une seule fois
-    ↓
-onStartCommand()  ← à chaque startService()
-    ↓                 retourne START_STICKY
-[Service tourne en Foreground avec notification]
-    ↓
-bindService() → onBind() → Activity reçoit le Binder
-    ↓
-[Communication directe Activity ↔ Service]
-    ↓
-unbindService() → onUnbind()
-    ↓
-stopService() → onDestroy()
-```
+### LifecycleOwner
+L'Activity implémente `LifecycleOwner`. Quand on écrit `observe(this, ...)`, le `this` permet à LiveData de savoir si l'Activity est active.
 
----
+### ViewModelStore
+Conteneur interne qui garde les ViewModel vivants entre les re-créations d'Activity. Détruit seulement quand `isFinishing() == true`.
 
-## Fichiers détaillés
+### Observer
+Lambda passée à `observe()`. Appelée **uniquement** quand :
+- L'Activity est en état `STARTED` ou `RESUMED`
+- La valeur du LiveData a changé
 
-### `ChronoService.java`
-
-| Méthode | Rôle |
-|---|---|
-| `onCreate()` | Crée le Handler et le NotificationChannel |
-| `onStartCommand()` | Lance `startForeground()` + démarre le timer |
-| `onBind()` | Retourne le `ChronoBinder` à l'Activity |
-| `onUnbind()` | Supprime le listener |
-| `onDestroy()` | Arrête le timer |
-| `startTimer()` | Planifie un Runnable toutes les secondes |
-| `stopTimer()` | Annule le Runnable |
-| `buildNotification()` | Construit la notification avec le temps actuel |
-| `setOnTickListener()` | API pour l'Activity (callback chaque seconde) |
-
-### `MainActivity.java`
-
-| Méthode | Rôle |
-|---|---|
-| `startChronoService()` | `startForegroundService()` + `bindService()` |
-| `stopChronoService()` | `unbindService()` + `stopService()` |
-| `onStart()` | Tente de se lier au service (s'il tourne déjà) |
-| `onStop()` | Se délie (le service continue en Foreground) |
-| `ServiceConnection` | Reçoit le Binder, configure le tick listener |
-
----
-
-## Permissions
-
-```xml
-<!-- Foreground Service (API 28+) -->
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
-<!-- Notifications (API 33+) -->
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-```
-
----
-
-## Comment tester
-
-1. **Lancez** l'app sur émulateur ou appareil (API 26+)
-2. Cliquez **DÉMARRER SERVICE** → la notification apparaît, le chrono tourne
-3. **Quittez l'app** complètement (bouton retour ou swipe) → le service **continue**
-4. Ouvrez le **tiroir de notifications** → le temps continue à défiler
-5. Cliquez sur la notification → retour dans l'app, le chrono est synchronisé
-6. Cliquez **ARRÊTER SERVICE** → tout s'arrête proprement
-
-### Vérification Logcat
-
-Filtrez par tag `ChronoService` ou `MainActivity` :
-
-```
-I/ChronoService: onCreate() — Service créé
-I/ChronoService: NotificationChannel créé : chrono_channel
-I/ChronoService: onStartCommand() — startId=1, flags=0
-I/ChronoService: Timer démarré
-I/ChronoService: onBind() — Activity liée au service
-I/MainActivity: onServiceConnected — lié au service
-...
-I/MainActivity: Bouton ARRÊTER cliqué
-I/ChronoService: onUnbind() — Activity déliée
-I/ChronoService: onDestroy() — Service détruit
-I/ChronoService: Timer arrêté
-```
+### onCleared()
+Méthode appelée quand le ViewModel est **définitivement détruit** (Activity finish). Idéal pour libérer des ressources.
 
 ---
 
 ## Dépendances
 
-**Aucune dépendance externe** — les Services et Notifications sont natifs Android.
-
 ```groovy
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.7.0'
 }
 ```
 
 ---
 
-## Bonnes pratiques appliquées
+## Tests à faire
 
-| Pratique | Détail |
-|---|---|
-| ✅ `startForeground()` immédiat | Dans les 5 premières secondes (sinon crash) |
-| ✅ `START_STICKY` | Relancé si tué par le système |
-| ✅ Notification `IMPORTANCE_LOW` | Pas de son à chaque mise à jour |
-| ✅ `setOnlyAlertOnce(true)` | Évite le bip répété |
-| ✅ `PendingIntent.FLAG_IMMUTABLE` | Requis depuis API 31 |
-| ✅ Unbind dans `onStop()` | Évite les fuites de mémoire |
-| ✅ Permission runtime (API 33) | `POST_NOTIFICATIONS` demandée au clic |
+### Test 1 : Rotation
+1. Incrémentez le compteur **classique** 5 fois → affiche `5`
+2. Incrémentez le compteur **ViewModel** 15 fois → affiche `15`
+3. **Tournez l'écran** (Ctrl+F11 sur émulateur)
+4. **Résultat :** classique = `0` ❌ | ViewModel = `15` ✅
+
+### Test 2 : Changement de thème
+1. Incrémentez → rotation → changement sombre/clair
+2. Le compteur ViewModel reste intact
+
+### Test 3 : Background thread (postValue)
+1. Cliquez "**+ 10 (Background Thread)**"
+2. Après 500ms le compteur augmente de 10
+3. Vérifiez dans Logcat : `[thread=Thread-X]`
+
+### Test 4 : Sans LiveData
+1. Commentez la ligne `viewModel.getCount().observe(...)` dans MainActivity
+2. Cliquez Incrémenter → l'UI ne se met **plus** à jour automatiquement
+3. → Prouve que c'est LiveData qui pousse les updates
+
+### Test 5 : Logcat
+Filtrez par `CounterViewModel` ou `MainActivity` :
+
+```
+I/CounterViewModel: ═══ CounterViewModel CRÉÉ (instance #1) ═══
+I/MainActivity: ═══ onCreate() — Activity créée 1 fois ═══
+D/CounterViewModel: increment → 1
+D/MainActivity: LiveData observe → UI mise à jour : 1
+[ROTATION]
+I/MainActivity: onDestroy() — isFinishing=false
+I/MainActivity: ═══ onCreate() — Activity créée 2 fois ═══
+D/MainActivity: LiveData observe → UI mise à jour : 1   ← INTACT !
+```
+> ⚠️ Notez que `CounterViewModel CRÉÉ` n'apparaît qu'**une seule fois** !
+
+---
+
+## Comparatif : anciennes méthodes vs ViewModel
+
+| Méthode | Survit rotation | Données complexes | Lifecycle-aware |
+|---|---|---|---|
+| Variable classique | ❌ | ✅ | ❌ |
+| `onSaveInstanceState()` | ✅ | ❌ (Bundle limité) | ❌ |
+| **ViewModel + LiveData** | **✅** | **✅** | **✅** |

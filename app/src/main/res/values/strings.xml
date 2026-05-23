@@ -1,21 +1,15 @@
 <resources>
-    <string name="app_name">Lab17 – BroadcastReceiver</string>
+    <string name="app_name">Lab18 – ViewModel LiveData</string>
 
-    <!-- Section 1 : Mode Avion (dynamique) -->
-    <string name="section_airplane">1 — Receiver dynamique : Mode Avion</string>
-    <string name="airplane_status">Statut : inconnu</string>
+    <!-- Compteur -->
+    <string name="label_counter">Compteur</string>
+    <string name="btn_increment">+ Incrémenter</string>
+    <string name="btn_decrement">− Décrémenter</string>
+    <string name="btn_reset">Réinitialiser</string>
+    <string name="btn_add_background">+ 10 (Background Thread)</string>
 
-    <!-- Section 2 : BOOT_COMPLETED (statique) -->
-    <string name="section_boot">2 — Receiver statique : BOOT_COMPLETED</string>
-    <string name="boot_info">Ce receiver est déclaré dans le Manifest.\nIl se déclenche au démarrage du téléphone.\nVérifiez le Logcat après un reboot.</string>
-
-    <!-- Section 3 : Broadcast custom -->
-    <string name="section_custom">3 — Broadcast custom (interne)</string>
-    <string name="hint_message">Message à diffuser</string>
-    <string name="btn_send_broadcast">Envoyer Broadcast</string>
-    <string name="custom_result">En attente d\'un broadcast…</string>
-
-    <!-- Section 4 : Journal des événements -->
-    <string name="section_log">📋 Journal des événements</string>
-    <string name="btn_clear_log">Effacer le journal</string>
+    <!-- Sections -->
+    <string name="section_viewmodel">ViewModel + LiveData</string>
+    <string name="section_classic">Variable classique (perdue à la rotation)</string>
+    <string name="section_info">Informations lifecycle</string>
 </resources>

@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- SECTION 1 — Mode Avion (Receiver dynamique) -->
+        <!-- SECTION 1 — Variable classique (perdue à la rotation) -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -19,73 +19,74 @@
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
             <LinearLayout android:orientation="vertical" android:padding="16dp"
+                android:gravity="center"
                 android:layout_width="match_parent" android:layout_height="wrap_content">
-                <TextView android:text="@string/section_airplane" android:textSize="16sp"
-                    android:textStyle="bold" android:textColor="@color/colorPrimary"
+                <TextView android:text="@string/section_classic" android:textSize="16sp"
+                    android:textStyle="bold" android:textColor="#D32F2F"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"/>
-                <TextView android:id="@+id/tvAirplaneStatus"
-                    android:text="@string/airplane_status"
-                    android:textSize="15sp" android:textColor="#333"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"/>
+                <TextView android:id="@+id/tvClassicCount" android:text="0"
+                    android:textSize="40sp" android:textStyle="bold" android:textColor="#D32F2F"
+                    android:fontFamily="monospace"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginBottom="4dp"/>
-                <TextView
-                    android:text="ℹ️ Enregistré dynamiquement dans onCreate().\nActivez/désactivez le mode avion pour tester."
+                <TextView android:text="⚠️ Perdu après rotation"
                     android:textSize="12sp" android:textColor="#888"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"/>
+                <Button android:id="@+id/btnClassicIncrement"
+                    android:text="+ Incrémenter (classique)"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SECTION 2 — BOOT_COMPLETED (Receiver statique) -->
+        <!-- SECTION 2 — ViewModel + LiveData (survit à la rotation) -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
-            <LinearLayout android:orientation="vertical" android:padding="16dp"
+            <LinearLayout android:orientation="vertical" android:padding="20dp"
+                android:gravity="center"
                 android:layout_width="match_parent" android:layout_height="wrap_content">
-                <TextView android:text="@string/section_boot" android:textSize="16sp"
+                <TextView android:text="@string/section_viewmodel" android:textSize="18sp"
                     android:textStyle="bold" android:textColor="@color/colorPrimary"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"/>
-                <TextView android:text="@string/boot_info"
-                    android:textSize="13sp" android:textColor="#555"
-                    android:lineSpacingExtra="4dp"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    android:layout_marginBottom="16dp"/>
+                <TextView android:id="@+id/tvViewModelCount" android:text="0"
+                    android:textSize="64sp" android:textStyle="bold" android:textColor="@color/colorPrimary"
+                    android:fontFamily="monospace"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"/>
+                <TextView android:text="✅ Survit à la rotation"
+                    android:textSize="12sp" android:textColor="#4CAF50"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"/>
+                <LinearLayout android:orientation="horizontal"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp">
+                    <Button android:id="@+id/btnDecrement" android:text="@string/btn_decrement"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_height="wrap_content" android:layout_marginEnd="4dp"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                    <Button android:id="@+id/btnIncrement" android:text="@string/btn_increment"
+                        android:layout_width="0dp" android:layout_weight="1"
+                        android:layout_height="wrap_content" android:layout_marginStart="4dp"/>
+                </LinearLayout>
+                <Button android:id="@+id/btnReset" android:text="@string/btn_reset"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                <Button android:id="@+id/btnAddBackground"
+                    android:text="@string/btn_add_background"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SECTION 3 — Broadcast custom -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
-            <LinearLayout android:orientation="vertical" android:padding="16dp"
-                android:layout_width="match_parent" android:layout_height="wrap_content">
-                <TextView android:text="@string/section_custom" android:textSize="16sp"
-                    android:textStyle="bold" android:textColor="@color/colorPrimary"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"/>
-                <EditText android:id="@+id/etMessage"
-                    android:hint="@string/hint_message"
-                    android:inputType="text"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"/>
-                <Button android:id="@+id/btnSendBroadcast"
-                    android:text="@string/btn_send_broadcast"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"/>
-                <TextView android:id="@+id/tvCustomResult"
-                    android:text="@string/custom_result"
-                    android:textSize="14sp" android:textColor="#333"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- SECTION 4 — Journal des événements -->
+        <!-- SECTION 3 — Infos lifecycle -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -94,19 +95,14 @@
             app:cardElevation="4dp">
             <LinearLayout android:orientation="vertical" android:padding="16dp"
                 android:layout_width="match_parent" android:layout_height="wrap_content">
-                <TextView android:text="@string/section_log" android:textSize="16sp"
+                <TextView android:text="@string/section_info" android:textSize="16sp"
                     android:textStyle="bold" android:textColor="@color/colorPrimary"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"/>
-                <TextView android:id="@+id/tvLog"
-                    android:text="" android:textSize="12sp" android:textColor="#444"
+                <TextView android:id="@+id/tvInfo" android:text=""
+                    android:textSize="12sp" android:textColor="#444"
                     android:fontFamily="monospace" android:lineSpacingExtra="3dp"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"/>
-                <Button android:id="@+id/btnClearLog"
-                    android:text="@string/btn_clear_log"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                    android:layout_width="match_parent" android:layout_height="wrap_content"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

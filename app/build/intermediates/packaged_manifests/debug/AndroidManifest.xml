@@ -8,9 +8,6 @@
         android:minSdkVersion="26"
         android:targetSdkVersion="34" />
 
-    <!-- Permission pour détecter BOOT_COMPLETED -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
     <permission
         android:name="com.example.hellotoast.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
@@ -27,9 +24,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:testOnly="true"
-        android:theme="@style/Theme.Lab17Receiver" >
-
-        <!-- MainActivity (launcher) -->
+        android:theme="@style/Theme.Lab18ViewModel" >
         <activity
             android:name="com.example.hellotoast.MainActivity"
             android:exported="true" >
@@ -39,16 +34,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Receiver STATIQUE : BOOT_COMPLETED -->
-        <receiver
-            android:name="com.example.hellotoast.BootReceiver"
-            android:enabled="true"
-            android:exported="true" >
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
 
         <provider
             android:name="androidx.startup.InitializationProvider"
